@@ -52,6 +52,7 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Memoria\MemoryManager.cs" />
     <Compile Include="Procesos\Process.cs" />
     <Compile Include="Procesos\ProcessManager.cs" />
     <Compile Include="Program.cs" />
@@ -85,7 +86,6 @@
     <Folder Include="Dispatcher\" />
     <Folder Include="GUI\" />
     <Folder Include="IO\" />
-    <Folder Include="Memoria\" />
     <Folder Include="Scheduler\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
