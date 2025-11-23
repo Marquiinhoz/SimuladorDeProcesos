@@ -20,4 +20,4 @@
 ## Cómo contribuir
 - Clonar el repositorio:
 ```bash
-git clone https://github.com/Marquiinhoz/Simulador-SO.git
+git clone https://github.com/Marquiinhoz/SimuladorDeProcesos.git
