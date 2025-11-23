@@ -28,13 +28,51 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            this.dgvProcesos = new System.Windows.Forms.DataGridView();
+            this.button1 = new System.Windows.Forms.Button();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvProcesos)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // dgvProcesos
+            // 
+            this.dgvProcesos.AccessibleName = "";
+            this.dgvProcesos.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvProcesos.Location = new System.Drawing.Point(700, 114);
+            this.dgvProcesos.Name = "dgvProcesos";
+            this.dgvProcesos.RowHeadersWidth = 51;
+            this.dgvProcesos.RowTemplate.Height = 24;
+            this.dgvProcesos.Size = new System.Drawing.Size(597, 286);
+            this.dgvProcesos.TabIndex = 0;
+            // 
+            // button1
+            // 
+            this.button1.AccessibleName = "btnGenerarProcesos";
+            this.button1.Location = new System.Drawing.Point(1068, 12);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(123, 45);
+            this.button1.TabIndex = 1;
+            this.button1.Text = "Generar Procesos";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1337, 532);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.dgvProcesos);
+            this.Name = "Form1";
             this.Text = "Form1";
+            ((System.ComponentModel.ISupportInitialize)(this.dgvProcesos)).EndInit();
+            this.ResumeLayout(false);
+
         }
 
         #endregion
+
+        private System.Windows.Forms.DataGridView dgvProcesos;
+        private System.Windows.Forms.Button button1;
     }
 }
 
