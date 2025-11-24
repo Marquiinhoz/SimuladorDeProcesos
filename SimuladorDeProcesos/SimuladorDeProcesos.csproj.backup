@@ -88,9 +88,5 @@
     <Folder Include="IO\" />
     <Folder Include="Scheduler\" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Scheduler\FCFS.cs" />
-    <Compile Include="IO\IOManager.cs" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
