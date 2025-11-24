@@ -7,7 +7,7 @@ using SimuladorDeProcesos.Procesos;
 
 namespace SimuladorDeProcesos.Scheduler
 {
-    public class FCFS
+    public class FCFS : IScheduler
     {
         public Queue<Process> ReadyQueue { get; set; } = new Queue<Process>();
 
@@ -16,7 +16,7 @@ namespace SimuladorDeProcesos.Scheduler
             ReadyQueue.Enqueue(p);
         }
 
-        public Process GetNextProcess()
+        public Process GetNextProcess(Process current = null)
         {
             if (ReadyQueue.Count > 0)
             {
