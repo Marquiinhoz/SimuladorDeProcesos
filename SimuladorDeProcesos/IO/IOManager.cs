@@ -12,6 +12,8 @@ namespace SimuladorDeProcesos.IO
         public string Dispositivo; // "Teclado", "Disco", "Impresora"
         public int PID;
         public DateTime Tiempo;
+        public int Duracion; // Duración de la interrupción
+        public int Restante; // Tiempo restante
 
         public override string ToString()
         {
@@ -30,6 +32,7 @@ namespace SimuladorDeProcesos.IO
             string[] dispositivos = { "Teclado", "Disco", "Impresora" };
             Random rnd = new Random();
             string disp = dispositivos[rnd.Next(dispositivos.Length)];
+            int duracion = rnd.Next(2, 8); // Duración aleatoria entre 2 y 7 unidades
 
             // Simular encolado
             if (disp == "Teclado") ColaTeclado.Enqueue(pid);
@@ -41,7 +44,9 @@ namespace SimuladorDeProcesos.IO
                 Tipo = "IO",
                 Dispositivo = disp,
                 PID = pid,
-                Tiempo = DateTime.Now
+                Tiempo = DateTime.Now,
+                Duracion = duracion,
+                Restante = duracion
             };
         }
     }

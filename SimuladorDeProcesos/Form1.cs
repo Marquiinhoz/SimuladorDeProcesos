@@ -12,8 +12,6 @@ using SimuladorDeProcesos.Procesos;
 using SimuladorDeProcesos.Despachador;
 using SimuladorDeProcesos.Scheduler;
 using SimuladorDeProcesos.IO;
-
-
 using System.Runtime.Versioning;
 
 namespace SimuladorDeProcesos
@@ -24,185 +22,370 @@ namespace SimuladorDeProcesos
         private IScheduler scheduler;
         private IOManager ioManager = new IOManager();
         private Process currentProcess = null;
-        private ComboBox cmbSchedulers;
+        private List<Process> listaProcesos = new List<Process>();
+        private List<Process> historialProcesos = new List<Process>();
+        private List<Interrupt> listaInterrupciones = new List<Interrupt>();
+        private int nextPID = 1;
+        private int tiempoTranscurrido = 0;
+        private int quantumActual = 0; // Contador para Round Robin
 
         public Form1()
         {
             InitializeComponent();
-            InitializeSchedulerSelector();
-            // Default scheduler
+            InicializarInterfaz();
+        }
+
+        private void InicializarInterfaz()
+        {
+            // Configurar ComboBox de planificadores
+            cmbSchedulers.SelectedIndex = 0;
             scheduler = new FCFS();
+
+            // Configurar DataGridView de Procesos
+            dgvProcesos.Columns.Clear();
+            dgvProcesos.Columns.Add("colProceso", "#Proceso");
+            dgvProcesos.Columns.Add("colTamano", "Tamaño (MB)");
+            dgvProcesos.Columns.Add("colBurstTime", "Burst-Time");
+            dgvProcesos.Columns.Add("colQuantum", "Quantum");
+            dgvProcesos.Columns.Add("colResiduo", "Residuo");
+            dgvProcesos.Columns.Add("colEstado", "Estado");
+
+            // Configurar DataGridView de Interrupciones
+            dgvInterrupciones.Columns.Clear();
+            dgvInterrupciones.Columns.Add("colInterrupcion", "#Interrupción");
+            dgvInterrupciones.Columns.Add("colDuracion", "Duración");
+            dgvInterrupciones.Columns.Add("colRestante", "Restante");
+            dgvInterrupciones.Columns.Add("colEstadoInt", "Estado");
+
+            // Configurar DataGridView de Historial
+            dgvHistorial.Columns.Clear();
+            dgvHistorial.Columns.Add("colProcesoHist", "#Proceso");
+            dgvHistorial.Columns.Add("colBurstHist", "Burst-Time");
+            dgvHistorial.Columns.Add("colTiempoFinal", "Tiempo Final");
+
+            // Ocultar Quantum por defecto
+            lblQuantum.Visible = false;
+            numQuantum.Visible = false;
         }
 
-        private void StyleControl(Control c)
-        {
-            c.BackColor = Color.FromArgb(35, 35, 35);
-            c.ForeColor = Color.White;
-            if (c is TextBox) ((TextBox)c).BorderStyle = BorderStyle.FixedSingle;
-            if (c is ListBox) ((ListBox)c).BorderStyle = BorderStyle.FixedSingle;
-        }
-
-        private void InitializeSchedulerSelector()
-        {
-            cmbSchedulers = new ComboBox();
-            cmbSchedulers.Items.AddRange(new object[] { "FCFS", "SJF", "SRTF", "Round Robin", "Prioridad" });
-            cmbSchedulers.SelectedIndex = 0; // Default FCFS
-            cmbSchedulers.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbSchedulers.Location = new Point(800, 25);
-            cmbSchedulers.Size = new Size(180, 30);
-            cmbSchedulers.Font = new Font("Segoe UI", 10);
-            cmbSchedulers.SelectedIndexChanged += CmbSchedulers_SelectedIndexChanged;
-
-            // Add to panelHeader
-            this.panelHeader.Controls.Add(cmbSchedulers);
-
-            // Add a label for it
-            Label lblSched = new Label();
-            lblSched.Text = "Planificador:";
-            lblSched.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            lblSched.Location = new Point(700, 28);
-            lblSched.AutoSize = true;
-            this.panelHeader.Controls.Add(lblSched);
-        }
-
-        private void CmbSchedulers_SelectedIndexChanged(object sender, EventArgs e)
+        private void cmbSchedulers_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cmbSchedulers.SelectedItem == null) return;
+
             string selected = cmbSchedulers.SelectedItem.ToString();
+
+            // Mostrar/ocultar campo Quantum
+            if (selected == "Round Robin")
+            {
+                lblQuantum.Visible = true;
+                numQuantum.Visible = true;
+                if (dgvProcesos.Columns.Contains("colQuantum"))
+                    dgvProcesos.Columns["colQuantum"].Visible = true;
+            }
+            else
+            {
+                lblQuantum.Visible = false;
+                numQuantum.Visible = false;
+                if (dgvProcesos.Columns.Contains("colQuantum"))
+                    dgvProcesos.Columns["colQuantum"].Visible = false;
+            }
+
+            // Crear scheduler correspondiente
             switch (selected)
             {
-                case "FCFS":
+                case "First Come First Serve":
                     scheduler = new FCFS();
                     break;
-                case "SJF":
+                case "Short Job First":
                     scheduler = new SJF();
                     break;
-                case "SRTF":
+                case "Shortest Remaining Time First":
                     scheduler = new SRTF();
                     break;
                 case "Round Robin":
-                    scheduler = new RoundRobin(3); // Default Quantum 3
+                    scheduler = new RoundRobin((int)numQuantum.Value);
                     break;
                 case "Prioridad":
                     scheduler = new PriorityScheduler();
                     break;
             }
 
-            // Clear the visual queue as the internal scheduler queue is now empty
-            lstReadyQueue.Items.Clear();
+            // Re-agregar procesos al nuevo scheduler
+            foreach (var p in listaProcesos)
+            {
+                if (p.Estado == "Ready" || p.Estado == "Listo")
+                {
+                    scheduler.AddProcess(p);
+                }
+            }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnAgregarProceso_Click(object sender, EventArgs e)
         {
-            ProcessManager manager = new ProcessManager();
-            manager.GenerarProcesos();
-
-            dgvProcesos.Rows.Clear();
-            dgvProcesos.ColumnCount = 7;
-            dgvProcesos.Columns[0].Name = "PID";
-            dgvProcesos.Columns[1].Name = "Estado";
-            dgvProcesos.Columns[2].Name = "BurstRestante";
-            dgvProcesos.Columns[3].Name = "PC";
-            dgvProcesos.Columns[4].Name = "TamanoCodigo";
-            dgvProcesos.Columns[5].Name = "TamanoDatos";
-            dgvProcesos.Columns[6].Name = "Prioridad";
-
-            lstReadyQueue.Items.Clear();
-            currentProcess = null;
-            txtCPU.Text = "";
-
-            // Re-initialize scheduler to ensure clean state based on current selection
-            // We can just trigger the logic by re-setting the scheduler directly or calling the handler
-            // But calling the handler clears the list, which we just did.
-            // Let's just ensure the scheduler is fresh.
-            CmbSchedulers_SelectedIndexChanged(null, null);
-
-            foreach (var p in manager.ListaProcesos)
+            // Validar inputs
+            if (!int.TryParse(txtTamanoMB.Text, out int tamanoMB) || tamanoMB <= 0)
             {
-                dgvProcesos.Rows.Add(p.PID, p.Estado, p.BurstRestante, p.ProgramCounter, p.TamanoCodigo, p.TamanoDatos, p.Prioridad);
-
-                // Agregar a Ready Queue para probar Scheduler
-                p.Estado = "Ready";
-                scheduler.AddProcess(p);
-                lstReadyQueue.Items.Add($"P{p.PID} (Burst: {p.BurstRestante})");
+                MessageBox.Show("Por favor ingrese un tamaño válido en MB", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
 
-        }
-
-        private void btnProbarMemoria_Click(object sender, EventArgs e)
-        {
-            var mem = new MemoryManager();
-
-            // Simular asignaciones para dos procesos (tamaños en KB)
-            List<int> p1 = mem.FirstFit(120); // P1 requiere 120 KB
-            List<int> p2 = mem.FirstFit(200); // P2 requiere 200 KB
-
-            // Mostrar bloques asignados en el TextBox
-            txtMapaBits.Clear();
-            txtMapaBits.AppendText("P1 bloques: " + (p1 == null ? "NO ASIGNADO" : string.Join(",", p1)) + Environment.NewLine);
-            txtMapaBits.AppendText("P2 bloques: " + (p2 == null ? "NO ASIGNADO" : string.Join(",", p2)) + Environment.NewLine);
-            txtMapaBits.AppendText(Environment.NewLine);
-            txtMapaBits.AppendText("Mapa de Bits (0=libre,1=ocupado):" + Environment.NewLine);
-            txtMapaBits.AppendText(string.Join(" ", mem.Bitmap));
-        }
-
-        private void btnDispatcher_Click(object sender, EventArgs e)
-        {
-            // Tomar el siguiente del scheduler
-            Process next = scheduler.GetNextProcess(currentProcess);
-
-            if (next != null)
+            if (!int.TryParse(txtBurstTime.Text, out int burstTime) || burstTime <= 0)
             {
-                Dispatcher dispatcher = new Dispatcher();
-                dispatcher.ContextSwitch(currentProcess, next);
+                MessageBox.Show("Por favor ingrese un Burst-Time válido", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
-                currentProcess = next; // Update current process
+            // Crear nuevo proceso
+            Process nuevoProceso = new Process(
+                pid: nextPID++,
+                estado: "Ready",
+                burstTotal: burstTime,
+                tamanoCodigo: 100, // Valores por defecto
+                tamanoDatos: 50,
+                tamanoHeap: 30,
+                prioridad: 1,
+                tamanoMB: tamanoMB
+            );
 
-                txtLogDispatcher.Text = dispatcher.UltimoLog;
-                txtCPU.Text = $"P{next.PID} Running";
+            // Agregar a la lista
+            listaProcesos.Add(nuevoProceso);
+            scheduler.AddProcess(nuevoProceso);
 
-                // Actualizar lista visual de Ready Queue
-                // Note: This removal logic is visual only and assumes order. 
-                // With different schedulers, the order in ListBox might not match the internal queue/list.
-                // It's better to refresh the list from the scheduler, but IScheduler doesn't expose the list.
-                // For now, we just remove the item that matches the PID if possible, or just rebuild the list.
-                // Since we don't have easy access to the internal list, we'll try to remove the one that became running.
+            // Actualizar vista
+            ActualizarVistaProcesos();
 
-                for (int i = 0; i < lstReadyQueue.Items.Count; i++)
+            // Limpiar inputs
+            txtTamanoMB.Clear();
+            txtBurstTime.Clear();
+            txtTamanoMB.Focus();
+        }
+
+        private void ActualizarVistaProcesos()
+        {
+            dgvProcesos.Rows.Clear();
+
+            foreach (var p in listaProcesos)
+            {
+                int quantum = 0;
+                if (scheduler is RoundRobin rr)
                 {
-                    if (lstReadyQueue.Items[i].ToString().Contains($"P{next.PID}"))
+                    quantum = rr.Quantum;
+                }
+
+                dgvProcesos.Rows.Add(
+                    $"P{p.PID}",
+                    p.TamanoMB,
+                    p.BurstTotal,
+                    quantum > 0 ? quantum.ToString() : "-",
+                    p.BurstRestante,
+                    p.Estado
+                );
+
+                // Colorear según estado
+                int rowIndex = dgvProcesos.Rows.Count - 1;
+                if (p.Estado == "Running" || p.Estado == "Ejecutando")
+                {
+                    dgvProcesos.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightGreen;
+                }
+                else if (p.Estado == "Terminado" || p.Estado == "Exit")
+                {
+                    dgvProcesos.Rows[rowIndex].DefaultCellStyle.BackColor = Color.LightGray;
+                }
+            }
+        }
+
+        private void btnIniciarSimulacion_Click(object sender, EventArgs e)
+        {
+            if (listaProcesos.Count == 0)
+            {
+                MessageBox.Show("No hay procesos para simular. Agregue al menos un proceso.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Actualizar scheduler si es Round Robin con nuevo quantum
+            if (scheduler is RoundRobin && cmbSchedulers.SelectedItem.ToString() == "Round Robin")
+            {
+                scheduler = new RoundRobin((int)numQuantum.Value);
+                foreach (var p in listaProcesos)
+                {
+                    if (p.Estado == "Ready" || p.Estado == "Listo")
                     {
-                        lstReadyQueue.Items.RemoveAt(i);
-                        break;
+                        scheduler.AddProcess(p);
                     }
                 }
+                ActualizarVistaProcesos();
+            }
+
+            // Iniciar simulación
+            btnIniciarSimulacion.Enabled = false;
+            btnDetenerSimulacion.Enabled = true;
+            cmbSchedulers.Enabled = false;
+            btnAgregarProceso.Enabled = false;
+            numQuantum.Enabled = false;
+
+            timerSimulacion.Start();
+        }
+
+        private void btnDetenerSimulacion_Click(object sender, EventArgs e)
+        {
+            timerSimulacion.Stop();
+            btnIniciarSimulacion.Enabled = true;
+            btnDetenerSimulacion.Enabled = false;
+        }
+
+        private void btnReiniciar_Click(object sender, EventArgs e)
+        {
+            timerSimulacion.Stop();
+
+            // Limpiar todo
+            listaProcesos.Clear();
+            historialProcesos.Clear();
+            listaInterrupciones.Clear();
+            currentProcess = null;
+            nextPID = 1;
+            tiempoTranscurrido = 0;
+            quantumActual = 0;
+
+            // Re-inicializar scheduler
+            cmbSchedulers_SelectedIndexChanged(null, null);
+
+            // Actualizar vistas
+            dgvProcesos.Rows.Clear();
+            dgvInterrupciones.Rows.Clear();
+            dgvHistorial.Rows.Clear();
+            lblProcesoActualNombre.Text = "Sin proceso";
+            progressBarProceso.Value = 0;
+            lblPorcentaje.Text = "0%";
+            lblTiempoTranscurrido.Text = "Tiempo transcurrido: 0 unidades";
+            lblCantidadProcesos.Text = "Procesos terminados: 0";
+            lblTiempoTotal.Text = $"Tiempo total: 0";
+
+            // Habilitar controles
+            btnIniciarSimulacion.Enabled = true;
+            btnDetenerSimulacion.Enabled = false;
+            cmbSchedulers.Enabled = true;
+            btnAgregarProceso.Enabled = true;
+            numQuantum.Enabled = true;
+        }
+
+        private void timerSimulacion_Tick(object sender, EventArgs e)
+        {
+            // Si no hay proceso actual, obtener el siguiente
+            if (currentProcess == null || currentProcess.BurstRestante <= 0)
+            {
+                // Si el proceso actual terminó, moverlo al historial
+                if (currentProcess != null && currentProcess.BurstRestante <= 0)
+                {
+                    currentProcess.Estado = "Terminado";
+                    currentProcess.TiempoFinal = tiempoTranscurrido;
+                    MoverProcesoAHistorial(currentProcess);
+                    currentProcess = null;
+                    quantumActual = 0;
+                }
+
+                // Obtener siguiente proceso
+                currentProcess = scheduler.GetNextProcess(null);
+
+                if (currentProcess == null)
+                {
+                    // No hay más procesos, detener simulación
+                    timerSimulacion.Stop();
+                    MessageBox.Show("Simulación completada. Todos los procesos han sido atendidos.", "Simulación Terminada", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    btnIniciarSimulacion.Enabled = true;
+                    btnDetenerSimulacion.Enabled = false;
+                    lblProcesoActualNombre.Text = "Simulación completada";
+                    return;
+                }
+
+                currentProcess.Estado = "Running";
+                quantumActual = 0;
+            }
+
+            // Para Round Robin, verificar si se agotó el quantum
+            if (scheduler is RoundRobin rr)
+            {
+                if (quantumActual >= rr.Quantum && currentProcess.BurstRestante > 0)
+                {
+                    // Quantum agotado, devolver a la cola
+                    currentProcess.Estado = "Ready";
+                    scheduler.AddProcess(currentProcess);
+                    currentProcess = null;
+                    quantumActual = 0;
+                    ActualizarVistaProcesos();
+                    return;
+                }
+            }
+
+            // Procesar 1 unidad de tiempo
+            if (currentProcess != null && currentProcess.BurstRestante > 0)
+            {
+                currentProcess.BurstRestante--;
+                quantumActual++;
+                tiempoTranscurrido++;
+
+                // Actualizar UI
+                ActualizarProcesoActual();
+                ActualizarVistaProcesos();
+                lblTiempoTranscurrido.Text = $"Tiempo transcurrido: {tiempoTranscurrido} unidades";
+
+                // Simular interrupciones aleatorias (10% de probabilidad)
+                Random rand = new Random();
+                if (rand.Next(100) < 10)
+                {
+                    GenerarInterrupcionAleatoria();
+                }
+            }
+        }
+
+        private void ActualizarProcesoActual()
+        {
+            if (currentProcess != null)
+            {
+                lblProcesoActualNombre.Text = $"Proceso P{currentProcess.PID}";
+                int porcentaje = currentProcess.PorcentajeProcesado;
+                progressBarProceso.Value = porcentaje;
+                lblPorcentaje.Text = $"{porcentaje}%";
             }
             else
             {
-                if (currentProcess != null)
-                {
-                    // If no next process but we have a current one, it might be continuing (e.g. SRTF)
-                    // But GetNextProcess usually returns the one to run. If it returns null, it means NO process to run.
-                    // If SRTF returns currentProcess, then next != null.
-                    // So if next is null, really no process is ready.
-                    MessageBox.Show("No hay procesos en Ready Queue");
-                }
-                else
-                {
-                    MessageBox.Show("No hay procesos en Ready Queue");
-                }
+                lblProcesoActualNombre.Text = "Sin proceso";
+                progressBarProceso.Value = 0;
+                lblPorcentaje.Text = "0%";
             }
         }
 
-        private void btnSimularIO_Click(object sender, EventArgs e)
+        private void MoverProcesoAHistorial(Process proceso)
         {
-            // Simular interrupción para un proceso ficticio P3
-            Interrupt interrupt = ioManager.GenerarInterrupcionAleatoria(3);
+            historialProcesos.Add(proceso);
+            
+            // Actualizar tabla de historial
+            dgvHistorial.Rows.Clear();
+            foreach (var p in historialProcesos)
+            {
+                dgvHistorial.Rows.Add($"P{p.PID}", p.BurstTotal, p.TiempoFinal);
+            }
 
-            lstIO.Items.Add(interrupt.ToString());
+            // Actualizar labels
+            lblCantidadProcesos.Text = $"Procesos terminados: {historialProcesos.Count}";
+            lblTiempoTotal.Text = $"Tiempo total: {tiempoTranscurrido}";
+        }
 
-            // Mostrar estado de colas
-            // En una implementación real, actualizaríamos visualmente las colas por separado
+        private void GenerarInterrupcionAleatoria()
+        {
+            Interrupt interrupt = ioManager.GenerarInterrupcionAleatoria(currentProcess?.PID ?? 0);
+            listaInterrupciones.Add(interrupt);
+
+            // Actualizar tabla de interrupciones
+            dgvInterrupciones.Rows.Clear();
+            foreach (var i in listaInterrupciones)
+            {
+                dgvInterrupciones.Rows.Add(
+                    $"INT{listaInterrupciones.IndexOf(i) + 1}",
+                    i.Duracion,
+                    i.Duracion, // Por ahora restante = duración
+                    "Pendiente"
+                );
+            }
         }
     }
 }
