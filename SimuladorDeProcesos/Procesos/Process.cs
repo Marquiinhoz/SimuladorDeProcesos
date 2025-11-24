@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SimuladorDeProcesos.Procesos
 {
-    internal class Process
+    public class Process
     {
         public int PID { get; set; }
         public string Estado { get; set; } // New, Ready, Running, Blocked, Exit

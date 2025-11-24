@@ -10,12 +10,17 @@ using System.Windows.Forms;
 using SimuladorDeProcesos.Memoria;
 using SimuladorDeProcesos.Procesos;
 using SimuladorDeProcesos.Despachador;
+using SimuladorDeProcesos.Scheduler;
+using SimuladorDeProcesos.IO;
 
 
 namespace SimuladorDeProcesos
 {
     public partial class Form1 : Form
     {
+        private FCFS scheduler = new FCFS();
+        private IOManager ioManager = new IOManager();
+
         public Form1()
         {
             InitializeComponent();
@@ -24,7 +29,6 @@ namespace SimuladorDeProcesos
         private void button1_Click(object sender, EventArgs e)
         {
             
-
             ProcessManager manager = new ProcessManager();
             manager.GenerarProcesos();
 
@@ -38,9 +42,16 @@ namespace SimuladorDeProcesos
             dgvProcesos.Columns[5].Name = "TamanoDatos";
             dgvProcesos.Columns[6].Name = "Prioridad";
 
+            lstReadyQueue.Items.Clear();
+
             foreach (var p in manager.ListaProcesos)
             {
                 dgvProcesos.Rows.Add(p.PID, p.Estado, p.BurstRestante, p.ProgramCounter, p.TamanoCodigo, p.TamanoDatos, p.Prioridad);
+                
+                // Agregar a Ready Queue para probar Scheduler
+                p.Estado = "Ready";
+                scheduler.AddProcess(p);
+                lstReadyQueue.Items.Add($"P{p.PID} (Burst: {p.BurstRestante})");
             }
 
         }
@@ -64,15 +75,37 @@ namespace SimuladorDeProcesos
 
         private void btnDispatcher_Click(object sender, EventArgs e)
         {
-            // Crear procesos ficticios
-            Process p1 = new Process(1, "Ready", 50, 100, 60, 30, 3);
-            Process p2 = new Process(2, "Ready", 40, 80, 40, 20, 1);
+            // Tomar el siguiente del scheduler
+            Process next = scheduler.GetNextProcess();
+            
+            if (next != null)
+            {
+                Process current = null; // Simular que no había nadie o crear uno dummy
+                
+                Dispatcher dispatcher = new Dispatcher();
+                dispatcher.ContextSwitch(current, next);
 
-            Dispatcher dispatcher = new Dispatcher();
+                txtLogDispatcher.Text = dispatcher.UltimoLog;
+                txtCPU.Text = $"P{next.PID} Running";
+                
+                // Actualizar lista visual de Ready Queue
+                lstReadyQueue.Items.RemoveAt(0);
+            }
+            else
+            {
+                MessageBox.Show("No hay procesos en Ready Queue");
+            }
+        }
 
-            dispatcher.ContextSwitch(p1, p2);
-
-            txtLogDispatcher.Text = dispatcher.UltimoLog;
+        private void btnSimularIO_Click(object sender, EventArgs e)
+        {
+            // Simular interrupción para un proceso ficticio P3
+            Interrupt interrupt = ioManager.GenerarInterrupcionAleatoria(3);
+            
+            lstIO.Items.Add(interrupt.ToString());
+            
+            // Mostrar estado de colas
+            // En una implementación real, actualizaríamos visualmente las colas por separado
         }
     }
 }
