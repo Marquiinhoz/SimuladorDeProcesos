@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SimuladorDeProcesos.Procesos
+namespace SimuladorDeProcesos.Domain.Procesos
 {
     public class Process
     {

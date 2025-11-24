@@ -1,6 +1,6 @@
-using SimuladorDeProcesos.Procesos;
+using SimuladorDeProcesos.Domain.Procesos;
 
-namespace SimuladorDeProcesos.Scheduler
+namespace SimuladorDeProcesos.Domain.Scheduler
 {
     public interface IScheduler
     {

@@ -7,31 +7,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SimuladorDeProcesos.Memoria;
-using SimuladorDeProcesos.Procesos;
-using SimuladorDeProcesos.Despachador;
-using SimuladorDeProcesos.Scheduler;
-using SimuladorDeProcesos.IO;
-
-
 using System.Runtime.Versioning;
+using SimuladorDeProcesos.BLL;
+using SimuladorDeProcesos.Domain.Procesos;
+using SimuladorDeProcesos.Domain.IO;
 
 namespace SimuladorDeProcesos
 {
     [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
-        private IScheduler scheduler;
-        private IOManager ioManager = new IOManager();
-        private Process currentProcess = null;
+        private SimulationService simulationService;
         private ComboBox cmbSchedulers;
 
         public Form1()
         {
             InitializeComponent();
             InitializeSchedulerSelector();
-            // Default scheduler
-            scheduler = new FCFS();
+            simulationService = new SimulationService();
         }
 
         private void StyleControl(Control c)
@@ -69,33 +62,19 @@ namespace SimuladorDeProcesos
         {
             if (cmbSchedulers.SelectedItem == null) return;
             string selected = cmbSchedulers.SelectedItem.ToString();
-            switch (selected)
+
+            if (simulationService != null)
             {
-                case "FCFS":
-                    scheduler = new FCFS();
-                    break;
-                case "SJF":
-                    scheduler = new SJF();
-                    break;
-                case "SRTF":
-                    scheduler = new SRTF();
-                    break;
-                case "Round Robin":
-                    scheduler = new RoundRobin(3); // Default Quantum 3
-                    break;
-                case "Prioridad":
-                    scheduler = new PriorityScheduler();
-                    break;
+                simulationService.SetScheduler(selected);
             }
 
-            // Clear the visual queue as the internal scheduler queue is now empty
+            // Clear the visual queue
             lstReadyQueue.Items.Clear();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            ProcessManager manager = new ProcessManager();
-            manager.GenerarProcesos();
+            simulationService.GenerateProcesses();
 
             dgvProcesos.Rows.Clear();
             dgvProcesos.ColumnCount = 7;
@@ -108,69 +87,66 @@ namespace SimuladorDeProcesos
             dgvProcesos.Columns[6].Name = "Prioridad";
 
             lstReadyQueue.Items.Clear();
-            currentProcess = null;
             txtCPU.Text = "";
 
-            // Re-initialize scheduler to ensure clean state based on current selection
-            // We can just trigger the logic by re-setting the scheduler directly or calling the handler
-            // But calling the handler clears the list, which we just did.
-            // Let's just ensure the scheduler is fresh.
-            CmbSchedulers_SelectedIndexChanged(null, null);
-
-            foreach (var p in manager.ListaProcesos)
+            foreach (var p in simulationService.ProcessManager.ListaProcesos)
             {
                 dgvProcesos.Rows.Add(p.PID, p.Estado, p.BurstRestante, p.ProgramCounter, p.TamanoCodigo, p.TamanoDatos, p.Prioridad);
-
-                // Agregar a Ready Queue para probar Scheduler
-                p.Estado = "Ready";
-                scheduler.AddProcess(p);
                 lstReadyQueue.Items.Add($"P{p.PID} (Burst: {p.BurstRestante})");
             }
-
         }
+
 
         private void btnProbarMemoria_Click(object sender, EventArgs e)
         {
-            var mem = new MemoryManager();
+            // Simular asignaciones con segmentación para dos procesos
+            // P1: 50 KB código, 40 KB datos, 30 KB heap = 120 KB total
+            var p1Alloc = simulationService.MemoryManager.AllocateMemory(1, 50, 40, 30);
 
-            // Simular asignaciones para dos procesos (tamaños en KB)
-            List<int> p1 = mem.FirstFit(120); // P1 requiere 120 KB
-            List<int> p2 = mem.FirstFit(200); // P2 requiere 200 KB
+            // P2: 80 KB código, 70 KB datos, 50 KB heap = 200 KB total
+            var p2Alloc = simulationService.MemoryManager.AllocateMemory(2, 80, 70, 50);
 
-            // Mostrar bloques asignados en el TextBox
+            // Mostrar mapa de memoria completo
             txtMapaBits.Clear();
-            txtMapaBits.AppendText("P1 bloques: " + (p1 == null ? "NO ASIGNADO" : string.Join(",", p1)) + Environment.NewLine);
-            txtMapaBits.AppendText("P2 bloques: " + (p2 == null ? "NO ASIGNADO" : string.Join(",", p2)) + Environment.NewLine);
+            txtMapaBits.AppendText(simulationService.MemoryManager.GetMemoryMapText());
             txtMapaBits.AppendText(Environment.NewLine);
-            txtMapaBits.AppendText("Mapa de Bits (0=libre,1=ocupado):" + Environment.NewLine);
-            txtMapaBits.AppendText(string.Join(" ", mem.Bitmap));
+
+            // Mostrar detalles de asignaciones
+            if (p1Alloc != null)
+            {
+                txtMapaBits.AppendText($"✓ P1 asignado: {p1Alloc.TotalAllocated} KB en {p1Alloc.Segments.Count} segmentos" + Environment.NewLine);
+            }
+            else
+            {
+                txtMapaBits.AppendText("✗ P1 NO ASIGNADO - Sin memoria suficiente" + Environment.NewLine);
+            }
+
+            if (p2Alloc != null)
+            {
+                txtMapaBits.AppendText($"✓ P2 asignado: {p2Alloc.TotalAllocated} KB en {p2Alloc.Segments.Count} segmentos" + Environment.NewLine);
+            }
+            else
+            {
+                txtMapaBits.AppendText("✗ P2 NO ASIGNADO - Sin memoria suficiente" + Environment.NewLine);
+            }
         }
+
 
         private void btnDispatcher_Click(object sender, EventArgs e)
         {
-            // Tomar el siguiente del scheduler
-            Process next = scheduler.GetNextProcess(currentProcess);
+            simulationService.RunDispatcher();
 
-            if (next != null)
+            Process current = simulationService.CurrentProcess;
+
+            if (current != null)
             {
-                Dispatcher dispatcher = new Dispatcher();
-                dispatcher.ContextSwitch(currentProcess, next);
-
-                currentProcess = next; // Update current process
-
-                txtLogDispatcher.Text = dispatcher.UltimoLog;
-                txtCPU.Text = $"P{next.PID} Running";
+                txtLogDispatcher.Text = simulationService.Dispatcher.UltimoLog;
+                txtCPU.Text = $"P{current.PID} Running";
 
                 // Actualizar lista visual de Ready Queue
-                // Note: This removal logic is visual only and assumes order. 
-                // With different schedulers, the order in ListBox might not match the internal queue/list.
-                // It's better to refresh the list from the scheduler, but IScheduler doesn't expose the list.
-                // For now, we just remove the item that matches the PID if possible, or just rebuild the list.
-                // Since we don't have easy access to the internal list, we'll try to remove the one that became running.
-
                 for (int i = 0; i < lstReadyQueue.Items.Count; i++)
                 {
-                    if (lstReadyQueue.Items[i].ToString().Contains($"P{next.PID}"))
+                    if (lstReadyQueue.Items[i].ToString().Contains($"P{current.PID}"))
                     {
                         lstReadyQueue.Items.RemoveAt(i);
                         break;
@@ -179,30 +155,16 @@ namespace SimuladorDeProcesos
             }
             else
             {
-                if (currentProcess != null)
-                {
-                    // If no next process but we have a current one, it might be continuing (e.g. SRTF)
-                    // But GetNextProcess usually returns the one to run. If it returns null, it means NO process to run.
-                    // If SRTF returns currentProcess, then next != null.
-                    // So if next is null, really no process is ready.
-                    MessageBox.Show("No hay procesos en Ready Queue");
-                }
-                else
-                {
-                    MessageBox.Show("No hay procesos en Ready Queue");
-                }
+                MessageBox.Show("No hay procesos en Ready Queue o no se seleccionó ninguno.");
             }
         }
 
         private void btnSimularIO_Click(object sender, EventArgs e)
         {
             // Simular interrupción para un proceso ficticio P3
-            Interrupt interrupt = ioManager.GenerarInterrupcionAleatoria(3);
+            Interrupt interrupt = simulationService.IOManager.GenerarInterrupcionAleatoria(3);
 
             lstIO.Items.Add(interrupt.ToString());
-
-            // Mostrar estado de colas
-            // En una implementación real, actualizaríamos visualmente las colas por separado
         }
     }
 }

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SimuladorDeProcesos.Procesos
+namespace SimuladorDeProcesos.Domain.Procesos
 {
-    internal class ProcessManager
+    public class ProcessManager
     {
         public List<Process> ListaProcesos { get; set; } = new List<Process>();
         private Random rnd = new Random();

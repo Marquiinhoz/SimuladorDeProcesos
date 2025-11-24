@@ -1,16 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using SimuladorDeProcesos.Procesos;
+using SimuladorDeProcesos.Domain.Procesos;
 
-namespace SimuladorDeProcesos.Scheduler
+namespace SimuladorDeProcesos.Domain.Scheduler
 {
-    public class PriorityScheduler : IScheduler
+    public class SJF : IScheduler
     {
-        public List<Process> ReadyList { get; set; } = new();
+        public List<Process> ReadyList { get; set; } = new List<Process>();
 
         public void AddProcess(Process p)
         {
-            p.Estado = "Listo";
             ReadyList.Add(p);
         }
 
@@ -19,7 +19,8 @@ namespace SimuladorDeProcesos.Scheduler
             if (ReadyList.Count == 0)
                 return null;
 
-            var next = ReadyList.OrderBy(p => p.Prioridad).First();
+            // Escoger el de menor Burst (no expropiativo)
+            var next = ReadyList.OrderBy(p => p.BurstTotal).First();
             ReadyList.Remove(next);
 
             next.Estado = "Ejecutando";

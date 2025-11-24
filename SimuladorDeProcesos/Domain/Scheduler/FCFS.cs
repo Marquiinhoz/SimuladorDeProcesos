@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SimuladorDeProcesos.Procesos;
+using SimuladorDeProcesos.Domain.Procesos;
 
-namespace SimuladorDeProcesos.Scheduler
+namespace SimuladorDeProcesos.Domain.Scheduler
 {
     public class FCFS : IScheduler
     {
