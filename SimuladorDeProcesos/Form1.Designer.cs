@@ -34,6 +34,8 @@
             this.btnProbarMemoria = new System.Windows.Forms.Button();
             this.txtMapaBits = new System.Windows.Forms.TextBox();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.btnDispatcher = new System.Windows.Forms.Button();
+            this.txtLogDispatcher = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProcesos)).BeginInit();
             this.SuspendLayout();
             // 
@@ -45,7 +47,7 @@
             this.dgvProcesos.Name = "dgvProcesos";
             this.dgvProcesos.RowHeadersWidth = 51;
             this.dgvProcesos.RowTemplate.Height = 24;
-            this.dgvProcesos.Size = new System.Drawing.Size(1245, 442);
+            this.dgvProcesos.Size = new System.Drawing.Size(697, 253);
             this.dgvProcesos.TabIndex = 0;
             // 
             // button1
@@ -71,7 +73,7 @@
             // 
             // txtMapaBits
             // 
-            this.txtMapaBits.Location = new System.Drawing.Point(364, 23);
+            this.txtMapaBits.Location = new System.Drawing.Point(1086, 88);
             this.txtMapaBits.Multiline = true;
             this.txtMapaBits.Name = "txtMapaBits";
             this.txtMapaBits.ReadOnly = true;
@@ -84,11 +86,32 @@
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
             // 
+            // btnDispatcher
+            // 
+            this.btnDispatcher.Location = new System.Drawing.Point(361, 12);
+            this.btnDispatcher.Name = "btnDispatcher";
+            this.btnDispatcher.Size = new System.Drawing.Size(95, 45);
+            this.btnDispatcher.TabIndex = 5;
+            this.btnDispatcher.Text = "Probar Dispatcher";
+            this.btnDispatcher.UseVisualStyleBackColor = true;
+            this.btnDispatcher.Click += new System.EventHandler(this.btnDispatcher_Click);
+            // 
+            // txtLogDispatcher
+            // 
+            this.txtLogDispatcher.Location = new System.Drawing.Point(1086, 155);
+            this.txtLogDispatcher.Multiline = true;
+            this.txtLogDispatcher.Name = "txtLogDispatcher";
+            this.txtLogDispatcher.ReadOnly = true;
+            this.txtLogDispatcher.Size = new System.Drawing.Size(208, 22);
+            this.txtLogDispatcher.TabIndex = 6;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1337, 532);
+            this.Controls.Add(this.txtLogDispatcher);
+            this.Controls.Add(this.btnDispatcher);
             this.Controls.Add(this.txtMapaBits);
             this.Controls.Add(this.btnProbarMemoria);
             this.Controls.Add(this.button1);
@@ -108,6 +131,8 @@
         private System.Windows.Forms.Button btnProbarMemoria;
         private System.Windows.Forms.TextBox txtMapaBits;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.Button btnDispatcher;
+        private System.Windows.Forms.TextBox txtLogDispatcher;
     }
 }
 

@@ -1,6 +1,4 @@
-﻿using SimuladorDeProcesos.Memoria;
-using SimuladorDeProcesos.Procesos;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -9,6 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SimuladorDeProcesos.Memoria;
+using SimuladorDeProcesos.Procesos;
+using SimuladorDeProcesos.Despachador;
+
 
 namespace SimuladorDeProcesos
 {
@@ -58,6 +60,19 @@ namespace SimuladorDeProcesos
             txtMapaBits.AppendText(Environment.NewLine);
             txtMapaBits.AppendText("Mapa de Bits (0=libre,1=ocupado):" + Environment.NewLine);
             txtMapaBits.AppendText(string.Join(" ", mem.Bitmap));
+        }
+
+        private void btnDispatcher_Click(object sender, EventArgs e)
+        {
+            // Crear procesos ficticios
+            Process p1 = new Process(1, "Ready", 50, 100, 60, 30, 3);
+            Process p2 = new Process(2, "Ready", 40, 80, 40, 20, 1);
+
+            Dispatcher dispatcher = new Dispatcher();
+
+            dispatcher.ContextSwitch(p1, p2);
+
+            txtLogDispatcher.Text = dispatcher.UltimoLog;
         }
     }
 }
