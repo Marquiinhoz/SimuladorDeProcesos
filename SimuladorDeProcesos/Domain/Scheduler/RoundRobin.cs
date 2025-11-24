@@ -6,12 +6,12 @@ namespace SimuladorDeProcesos.Domain.Scheduler
 {
     public class RoundRobin : IScheduler
     {
-        private int quantum;
+        public int Quantum { get; private set; }
         public Queue<Process> ReadyQueue { get; set; } = new Queue<Process>();
 
         public RoundRobin(int quantum)
         {
-            this.quantum = quantum;
+            this.Quantum = quantum;
         }
 
         public void AddProcess(Process p)
