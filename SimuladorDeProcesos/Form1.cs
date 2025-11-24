@@ -14,8 +14,11 @@ using SimuladorDeProcesos.Scheduler;
 using SimuladorDeProcesos.IO;
 
 
+using System.Runtime.Versioning;
+
 namespace SimuladorDeProcesos
 {
+    [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
         private IScheduler scheduler;
@@ -26,64 +29,17 @@ namespace SimuladorDeProcesos
         public Form1()
         {
             InitializeComponent();
-            ApplyModernTheme();
             InitializeSchedulerSelector();
             // Default scheduler
             scheduler = new FCFS();
         }
 
-        private void ApplyModernTheme()
-        {
-            this.BackColor = Helpers.UIHelper.BackgroundColor;
-            
-            // Header
-            panelHeader.BackColor = Helpers.UIHelper.SurfaceColor;
-            
-            // Buttons
-            Helpers.UIHelper.StyleButton(button1, Helpers.UIHelper.AccentColor); // Generar
-            Helpers.UIHelper.StyleButton(btnProbarMemoria, Color.FromArgb(40, 167, 69)); // Green
-            Helpers.UIHelper.StyleButton(btnDispatcher, Color.FromArgb(255, 193, 7)); // Orange/Yellow
-            btnDispatcher.ForeColor = Color.Black; // Better contrast for yellow
-            Helpers.UIHelper.StyleButton(btnSimularIO, Color.FromArgb(111, 66, 193)); // Purple
-
-            // DataGridView
-            Helpers.UIHelper.StyleDataGridView(dgvProcesos);
-
-            // GroupBoxes
-            // Note: Custom painting in UIHelper might conflict if not handled carefully, 
-            // but let's try applying simple styling first.
-            foreach(Control c in this.Controls)
-            {
-               if(c is GroupBox) Helpers.UIHelper.StyleGroupBox((GroupBox)c);
-            }
-            // Also nested ones
-            foreach(Control c in tableLayoutPanelMain.Controls)
-            {
-                if(c is GroupBox) Helpers.UIHelper.StyleGroupBox((GroupBox)c);
-            }
-            foreach(Control c in panelSidebar.Controls)
-            {
-                if(c is GroupBox) Helpers.UIHelper.StyleGroupBox((GroupBox)c);
-            }
-
-            // TextBoxes & Lists
-            StyleControl(txtCPU);
-            StyleControl(txtLogDispatcher);
-            StyleControl(txtMapaBits);
-            StyleControl(lstReadyQueue);
-            StyleControl(lstIO);
-
-            // Labels
-            lblCPU.ForeColor = Helpers.UIHelper.TextColor;
-            lblReadyQueue.ForeColor = Helpers.UIHelper.TextColor;
-        }
-
         private void StyleControl(Control c)
         {
             c.BackColor = Color.FromArgb(35, 35, 35);
-            c.ForeColor = Helpers.UIHelper.TextColor;
-            if(c is TextBox) ((TextBox)c).BorderStyle = BorderStyle.FixedSingle;
-            if(c is ListBox) ((ListBox)c).BorderStyle = BorderStyle.FixedSingle;
+            c.ForeColor = Color.White;
+            if (c is TextBox) ((TextBox)c).BorderStyle = BorderStyle.FixedSingle;
+            if (c is ListBox) ((ListBox)c).BorderStyle = BorderStyle.FixedSingle;
         }
 
         private void InitializeSchedulerSelector()
@@ -92,22 +48,18 @@ namespace SimuladorDeProcesos
             cmbSchedulers.Items.AddRange(new object[] { "FCFS", "SJF", "SRTF", "Round Robin", "Prioridad" });
             cmbSchedulers.SelectedIndex = 0; // Default FCFS
             cmbSchedulers.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbSchedulers.Location = new Point(800, 25); 
+            cmbSchedulers.Location = new Point(800, 25);
             cmbSchedulers.Size = new Size(180, 30);
             cmbSchedulers.Font = new Font("Segoe UI", 10);
-            cmbSchedulers.BackColor = Helpers.UIHelper.SurfaceColor;
-            cmbSchedulers.ForeColor = Helpers.UIHelper.TextColor;
-            cmbSchedulers.FlatStyle = FlatStyle.Flat;
             cmbSchedulers.SelectedIndexChanged += CmbSchedulers_SelectedIndexChanged;
-            
+
             // Add to panelHeader
             this.panelHeader.Controls.Add(cmbSchedulers);
-            
+
             // Add a label for it
             Label lblSched = new Label();
             lblSched.Text = "Planificador:";
             lblSched.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            lblSched.ForeColor = Helpers.UIHelper.TextColor;
             lblSched.Location = new Point(700, 28);
             lblSched.AutoSize = true;
             this.panelHeader.Controls.Add(lblSched);
@@ -135,7 +87,7 @@ namespace SimuladorDeProcesos
                     scheduler = new PriorityScheduler();
                     break;
             }
-            
+
             // Clear the visual queue as the internal scheduler queue is now empty
             lstReadyQueue.Items.Clear();
         }
@@ -168,7 +120,7 @@ namespace SimuladorDeProcesos
             foreach (var p in manager.ListaProcesos)
             {
                 dgvProcesos.Rows.Add(p.PID, p.Estado, p.BurstRestante, p.ProgramCounter, p.TamanoCodigo, p.TamanoDatos, p.Prioridad);
-                
+
                 // Agregar a Ready Queue para probar Scheduler
                 p.Estado = "Ready";
                 scheduler.AddProcess(p);
@@ -198,7 +150,7 @@ namespace SimuladorDeProcesos
         {
             // Tomar el siguiente del scheduler
             Process next = scheduler.GetNextProcess(currentProcess);
-            
+
             if (next != null)
             {
                 Dispatcher dispatcher = new Dispatcher();
@@ -208,17 +160,17 @@ namespace SimuladorDeProcesos
 
                 txtLogDispatcher.Text = dispatcher.UltimoLog;
                 txtCPU.Text = $"P{next.PID} Running";
-                
+
                 // Actualizar lista visual de Ready Queue
                 // Note: This removal logic is visual only and assumes order. 
                 // With different schedulers, the order in ListBox might not match the internal queue/list.
                 // It's better to refresh the list from the scheduler, but IScheduler doesn't expose the list.
                 // For now, we just remove the item that matches the PID if possible, or just rebuild the list.
                 // Since we don't have easy access to the internal list, we'll try to remove the one that became running.
-                
-                for(int i=0; i<lstReadyQueue.Items.Count; i++)
+
+                for (int i = 0; i < lstReadyQueue.Items.Count; i++)
                 {
-                    if(lstReadyQueue.Items[i].ToString().Contains($"P{next.PID}"))
+                    if (lstReadyQueue.Items[i].ToString().Contains($"P{next.PID}"))
                     {
                         lstReadyQueue.Items.RemoveAt(i);
                         break;
@@ -246,9 +198,9 @@ namespace SimuladorDeProcesos
         {
             // Simular interrupción para un proceso ficticio P3
             Interrupt interrupt = ioManager.GenerarInterrupcionAleatoria(3);
-            
+
             lstIO.Items.Add(interrupt.ToString());
-            
+
             // Mostrar estado de colas
             // En una implementación real, actualizaríamos visualmente las colas por separado
         }

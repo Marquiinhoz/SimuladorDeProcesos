@@ -4,8 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using System.Runtime.Versioning;
+
 namespace SimuladorDeProcesos
 {
+    [SupportedOSPlatform("windows")]
     internal static class Program
     {
         /// <summary>

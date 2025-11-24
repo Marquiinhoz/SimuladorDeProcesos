@@ -24,25 +24,5 @@ namespace SimuladorDeProcesos.Scheduler
             }
             return null;
         }
-
-        // Pseudocódigo SJF
-        /*
-        public Process GetNextProcessSJF(List<Process> availableProcesses)
-        {
-            // Ordenar por BurstRestante ascendente
-            // return availableProcesses.OrderBy(p => p.BurstRestante).FirstOrDefault();
-            return null;
-        }
-        */
-
-        // Pseudocódigo RR
-        /*
-        public Process GetNextProcessRR(Queue<Process> rrQueue, int quantum)
-        {
-            // Tomar el primero, ejecutar quantum, si no termina, volver a encolar
-            // return rrQueue.Dequeue();
-            return null;
-        }
-        */
     }
 }
