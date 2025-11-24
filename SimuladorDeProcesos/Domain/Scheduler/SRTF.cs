@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using SimuladorDeProcesos.Procesos;
+using SimuladorDeProcesos.Domain.Procesos;
 
-namespace SimuladorDeProcesos.Scheduler
+namespace SimuladorDeProcesos.Domain.Scheduler
 {
     public class SRTF : IScheduler
     {
-        public List<Process> ReadyList { get; set; } = new();
+        public List<Process> ReadyList { get; set; } = new List<Process>();
 
         public void AddProcess(Process p)
         {

@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SimuladorDeProcesos.Procesos;
+using SimuladorDeProcesos.Domain.Procesos;
 
-namespace SimuladorDeProcesos.Despachador
+namespace SimuladorDeProcesos.Domain.Despachador
 {
-    internal class Dispatcher
+    public class Dispatcher
     {
         public string UltimoLog { get; private set; }
 
