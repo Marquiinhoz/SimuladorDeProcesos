@@ -14,7 +14,7 @@ namespace SimuladorDeProcesos.Procesos
         // Genera 2-3 procesos aleatorios
         public void GenerarProcesos()
         {
-            int cantidad = rnd.Next(2, 4); // genera 2 o 3 procesos
+            int cantidad = rnd.Next(2, 50); // genera 2 o 3 procesos
             for (int i = 1; i <= cantidad; i++)
             {
                 Process p = new Process(
